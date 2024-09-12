@@ -17,13 +17,15 @@ shadow_animator = ShadowAnimator(
 )
 
 # Add keyframes for animation
+# TODO: refine movement
 shadow_animator.add_keyframe(0, np.eye(2, 3))
 shadow_animator.add_keyframe(60, np.array([[0.9, 0.1, 20], [-0.1, 0.9, 10]]))
-shadow_animator.add_keyframe(120, np.array([[1.1, 0, -30], [0, 1.1, -20]]))
+shadow_animator.add_keyframe(120, np.array([[1.0, 0, -10], [0, 1.0, -5]]))
 
 # Generate the output video
 shadow_animator.generate_video(
     preprocess_mask=True,
+    noise_gen_method="simple",
     auto_threshold_method="grayscale",
     apply_noise=True,
     apply_blur=False,

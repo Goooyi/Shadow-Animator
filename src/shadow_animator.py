@@ -40,6 +40,7 @@ class ShadowAnimator:
         self,
         preprocess_mask=False,
         auto_threshold_method="otsu", # otsu, adaptive or simple_grayscale
+        noise_gen_method="simple", # simple or simplex. (perlin not implemented)
         block_size=11,
         c=2,
         mask_threshold=127,
@@ -116,9 +117,17 @@ class ShadowAnimator:
 
             # Apply noise movement
             if apply_noise:
-                resized_shadow_mask = apply_noise_movement(
-                    resized_shadow_mask, frame_number
-                )
+                if noise_gen_method == "simple":
+                    resized_shadow_mask = apply_noise_movement(
+                        resized_shadow_mask, frame_number
+                    )
+                elif noise_gen_method == "simplex":
+                    resized_shadow_mask = apply_simplex_noise_movement(
+                        resized_shadow_mask, frame_number
+                    )
+                else:
+                    raise ValueError(f"noise gen method {noise_gen_method} not supported")
+
 
             # Apply motion blur
             if apply_blur:
