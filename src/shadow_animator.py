@@ -3,6 +3,7 @@ import numpy as np
 
 from .utils import (
     apply_noise_movement,
+    apply_simplex_noise_movement,
     apply_motion_blur,
     interpolate_keyframes,
     apply_depth_deformation,

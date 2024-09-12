@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from opensimplex import OpenSimplex
 
 def clean_up_mask(mask, kernel_size=3):
     kernel = np.ones((kernel_size, kernel_size), np.uint8)
@@ -27,22 +28,49 @@ def simple_grayscale(shadow_mask):
     shadow_mask = cv2.convertScaleAbs(shadow_mask, alpha=1.5, beta=0)
     return cv2.bitwise_not(shadow_mask)
 
+# TODO: legacy
 def apply_noise_movement(shadow_mask, frame_number, noise_scale=0.01, noise_speed=0.05, movement_strength=5):
-    # Create a noise image
-    noise = np.zeros_like(shadow_mask, dtype=np.float32)
+    # sine-cosine based noise
     rows, cols = shadow_mask.shape
-    for i in range(rows):
-        for j in range(cols):
-            noise[i, j] = np.sin(i * noise_scale + frame_number * noise_speed) * \
-                          np.cos(j * noise_scale + frame_number * noise_speed)
+    y, x = np.meshgrid(np.arange(rows), np.arange(cols), indexing='ij')
+
+    # Generate noise using vectorized operations
+    noise = np.sin(x * noise_scale + frame_number * noise_speed) * \
+            np.cos(y * noise_scale + frame_number * noise_speed)
+
+    # Normalize noise to [-1, 1] range
+    noise = (noise - noise.min()) / (noise.max() - noise.min()) * 2 - 1
+
+    # Create movement map
+    map_x, map_y = np.meshgrid(np.arange(cols), np.arange(rows))
+    map_x = map_x.astype(np.float32) + noise * movement_strength
+    map_y = map_y.astype(np.float32) + noise * movement_strength
+
+    # Remap the shadow mask
+    # Combine map_x and map_y into a single 2-channel array
+    map_xy = np.dstack((map_x, map_y)).astype(np.float32)
+    moved_shadow = cv2.remap(shadow_mask, map_xy, None, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
+
+    return moved_shadow.astype(np.uint8)
+
+def apply_simplex_noise_movement(shadow_mask, frame_number, noise_scale=0.01, noise_speed=0.05, movement_strength=5):
+    # Initialize the Simplex noise generator
+    noise_gen = OpenSimplex(seed=int(frame_number * noise_speed))
+
+    # Create a noise image using Simplex noise
+    rows, cols = shadow_mask.shape
+    noise = np.zeros((rows, cols), dtype=np.float32)
+    for y in range(rows):
+        for x in range(cols):
+            noise[y, x] = noise_gen.noise3(x * noise_scale, y * noise_scale, frame_number * noise_speed)
 
     # Normalize noise to [-1, 1] range
     noise = cv2.normalize(noise, None, -1, 1, cv2.NORM_MINMAX, cv2.CV_32F)
 
     # Create movement map
-    map_x = np.float32(np.arange(cols))
-    map_y = np.float32(np.arange(rows))
-    map_x, map_y = np.meshgrid(map_x, map_y)
+    map_x, map_y = np.meshgrid(np.arange(cols), np.arange(rows))
+    map_x = map_x.astype(np.float32)
+    map_y = map_y.astype(np.float32)
 
     # Apply noise to movement map
     map_x += noise * movement_strength

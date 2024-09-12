@@ -11,7 +11,7 @@ shadow_animator = ShadowAnimator(
     ),
     # depth_map=cv2.imread('depth_map.png', 0),
     depth_map=None,
-    output_path="/workspaces/Shadow-Animator/output/output_video.mp4",
+    output_path="/workspaces/Shadow-Animator/output/output_video_withKeyFrame.mp4",
     fps=24,
     num_frames=180,
 )
